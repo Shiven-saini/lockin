@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const ytdl = require('ytdl-core');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
@@ -10,8 +11,31 @@ const PORT = 5000;
 app.use(cors());
 app.use(express.json());
 
+// Serve static files from the frontend build directory if it exists
+try {
+  const frontendBuildPath = path.join(__dirname, '../frontend/build');
+  const staticFileMiddleware = express.static(frontendBuildPath);
+  app.use(staticFileMiddleware);
+  console.log(`Serving frontend static files from ${frontendBuildPath}`);
+} catch (error) {
+  console.log('Frontend build directory not found - development mode');
+}
+
 // YouTube URL for the lofi stream
 const LOFI_URL = 'https://www.youtube.com/watch?v=jfKfPfyJRdk';
+
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    message: 'Lofi streaming server is running',
+    endpoints: {
+      health: '/api/health',
+      streamInfo: '/api/stream-info',
+      stream: '/api/stream'
+    }
+  });
+});
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -77,13 +101,30 @@ app.get('/api/stream', async (req, res) => {
   }
 });
 
+// Catch-all route for SPA (Single Page Application)
+app.get('*', (req, res, next) => {
+  // Skip API routes
+  if (req.path.startsWith('/api')) {
+    return next();
+  }
+  
+  try {
+    // Try to send the index.html for non-API routes (SPA routing)
+    const frontendIndexPath = path.join(__dirname, '../frontend/build/index.html');
+    res.sendFile(frontendIndexPath);
+  } catch (error) {
+    // If the file doesn't exist, continue to the next middleware
+    next();
+  }
+});
+
 // Error handling middleware
 app.use((error, req, res, next) => {
   console.error('Server error:', error);
   res.status(500).json({ error: 'Internal server error' });
 });
 
-app.listen(PORT, () => {
-  console.log(`🎵 Lofi streaming server running on port ${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🎵 Lofi streaming server running on 0.0.0.0:${PORT}`);
   console.log(`🌐 Stream URL: http://localhost:${PORT}/api/stream`);
 });
