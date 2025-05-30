@@ -3,6 +3,9 @@ import axios from 'axios';
 import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
 import './App.css';
 
+// Configure axios
+axios.defaults.baseURL = process.env.NODE_ENV === 'production' ? '' : 'http://localhost:5000';
+
 function App() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(0.7);
@@ -46,8 +49,10 @@ function App() {
       setLoading(true);
       try {
         const response = await axios.get('/api/stream-info');
+        console.log('Stream info received:', response.data);
         setStreamInfo(response.data);
       } catch (apiError) {
+        console.error('API error:', apiError);
         // Fallback for demo if API is unavailable
         console.log('Using fallback stream info');
         setStreamInfo({
@@ -93,6 +98,7 @@ function App() {
   const tryAlternativeSource = () => {
     // List of fallback audio streams
     const fallbackStreams = [
+      "/api/stream",
       "https://play.streamafrica.net/lofiradio",
       "https://streams.ilovemusic.de/iloveradio17.mp3",
       "https://mp3.chillhop.com/serve.php/?mp3=9272"
@@ -100,7 +106,9 @@ function App() {
     
     // Find current source index
     const currentSrc = audioRef.current.src;
-    const currentIndex = fallbackStreams.indexOf(currentSrc);
+    const currentIndex = fallbackStreams.findIndex(src => 
+      currentSrc.endsWith(src) || currentSrc === src
+    );
     
     // Try the next source in the list
     const nextIndex = (currentIndex + 1) % fallbackStreams.length;
@@ -133,6 +141,9 @@ function App() {
   };
   const handleAudioError = (e) => {
     console.error('Audio error event:', e);
+    console.error('Error code:', e.target.error ? e.target.error.code : 'unknown');
+    console.error('Current src:', audioRef.current.src);
+    
     setError('Audio stream error. Trying alternative sources...');
     setIsPlaying(false);
     
@@ -222,7 +233,7 @@ function App() {
         <p>&copy; 2025 Developed by Shiven Saini</p>
       </footer>      <audio
         ref={audioRef}
-        src="https://play.streamafrica.net/lofiradio"
+        src="/api/stream"
         onError={handleAudioError}
         onLoadStart={() => console.log('Loading audio...')}
         onCanPlay={() => setLoading(false)}
@@ -230,6 +241,7 @@ function App() {
         preload="auto"
         playsInline
       >
+        <source src="/api/stream" type="audio/mpeg" />
         <source src="https://play.streamafrica.net/lofiradio" type="audio/mpeg" />
         <source src="https://streams.ilovemusic.de/iloveradio17.mp3" type="audio/mpeg" />
         <source src="https://mp3.chillhop.com/serve.php/?mp3=9272" type="audio/mpeg" />
