@@ -68,7 +68,25 @@ app.get('/api/health', (req, res) => {
 // Get stream info
 app.get('/api/stream-info', async (req, res) => {
   try {
-    // Try play-dl first since ytdl-core is having issues
+    // Check if we're running in a server environment (process.env.NODE_ENV === 'production')
+    // or if an environment variable SERVER_DEPLOY is set
+    const isServerDeploy = process.env.NODE_ENV === 'production' || process.env.SERVER_DEPLOY === 'true';
+    
+    // If we're in a server environment, prioritize alternative streams to avoid YouTube restrictions
+    if (isServerDeploy) {
+      console.log('Server deployment detected - using alternative stream info');
+      const fallbackStream = ALTERNATIVE_STREAMS[0];
+      res.json({
+        title: fallbackStream.title,
+        description: fallbackStream.description,
+        thumbnail: "https://i.ytimg.com/vi/jfKfPfyJRdk/maxresdefault.jpg",
+        url: fallbackStream.url,
+        isAlternative: true
+      });
+      return;
+    }
+    
+    // If we're not in a server environment, try YouTube sources first
     try {
       console.log('Fetching info with play-dl...');
       const playInfo = await play.video_info(LOFI_URL);
@@ -128,6 +146,16 @@ app.get('/api/stream', async (req, res) => {
     res.setHeader('Content-Type', 'audio/mpeg');
     res.setHeader('Accept-Ranges', 'bytes');
     res.setHeader('Cache-Control', 'no-cache');
+    
+    // Check if we're running in a server environment
+    const isServerDeploy = process.env.NODE_ENV === 'production' || process.env.SERVER_DEPLOY === 'true';
+    
+    // If we're in a server environment, use alternative streams directly
+    if (isServerDeploy) {
+      console.log('Server deployment detected - using direct alternative stream');
+      res.redirect(ALTERNATIVE_STREAMS[0].url);
+      return;
+    }
     
     // Try with play-dl first since ytdl-core is having issues
     try {

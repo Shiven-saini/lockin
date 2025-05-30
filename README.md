@@ -127,6 +127,60 @@ npm start
 - `npm test` - Run tests
 - `npm run eject` - Eject from Create React App (irreversible)
 
+## Deployment on Ubuntu Server
+
+For deploying on an Ubuntu server, follow these steps:
+
+### Using the Deployment Script
+
+The easiest way to deploy is using the included deployment script:
+
+```bash
+# Make the script executable
+chmod +x deploy.sh
+
+# Run the deployment script
+./deploy.sh
+```
+
+This will:
+1. Check and stop any existing processes using port 5000
+2. Install all dependencies
+3. Build the frontend for production
+4. Start the server with the SERVER_DEPLOY environment variable set
+
+### Running as a System Service
+
+For a more robust deployment that restarts automatically and runs in the background:
+
+1. Copy the provided systemd service file to the system directory:
+   ```bash
+   sudo cp lockin-lofi.service /etc/systemd/system/
+   ```
+
+2. Modify the service file if your installation path is different:
+   ```bash
+   sudo nano /etc/systemd/system/lockin-lofi.service
+   ```
+
+3. Enable and start the service:
+   ```bash
+   sudo systemctl daemon-reload
+   sudo systemctl enable lockin-lofi
+   sudo systemctl start lockin-lofi
+   ```
+
+4. Check the service status:
+   ```bash
+   sudo systemctl status lockin-lofi
+   ```
+
+### Troubleshooting Server Deployment
+
+If you encounter YouTube API issues on your server (as seen in the error logs), the application will automatically fall back to direct audio streams. This is expected behavior as many server IPs are blocked by YouTube's bot protection.
+
+The SERVER_DEPLOY environment variable tells the application to prioritize direct streams over attempting to access YouTube content, which makes the deployment more reliable on servers.
+
 ## API Endpoints
 
 ### Backend API

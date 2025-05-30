@@ -1,0 +1,23 @@
+[Unit]
+Description=Lofi Streaming App
+After=network.target
+StartLimitIntervalSec=500
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/lockin
+Environment="SERVER_DEPLOY=true"
+Environment="NODE_ENV=production"
+ExecStart=/usr/bin/npm start
+Restart=on-failure
+RestartSec=5s
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=lockin-lofi
+# Graceful stop timeout
+TimeoutStopSec=10
+
+[Install]
+WantedBy=multi-user.target
